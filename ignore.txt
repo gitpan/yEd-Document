@@ -18,3 +18,4 @@ yEd-Document-*
 yEd-Document-*.tar.gz
 .git/
 .gitignore
+install_release.sh

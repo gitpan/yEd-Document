@@ -13,7 +13,7 @@ yEd::Edge - Base class for Edges
 =head1 DESCRIPTION
 
 This is the base class for Edges. 
-It may not be instanciated, instead use one of the specialized types as described in the SUPPORTED FEATURES section.
+It may not be instanciated, instead use one of the specialized types as described in the L</SUPPORTED FEATURES> section.
 
 =head1 SUPPORTED FEATURES
 
@@ -65,7 +65,7 @@ Support beyond yEd:
     
 =item *
     
-You may specify waypoints to be relative to previous waypoints / source Node (see relativeWaypoints property)
+You may specify waypoints to be relative to previous waypoints / source Node (see C<relativeWaypoints> property)
 
 =item *
 
@@ -79,9 +79,11 @@ You may add multiple Labels to a single Edge (yEd will handle it properly)
 
 This property is read only and returns the Edge's ID.
 
+See L<yEd::Document> for details about object identifiers.
+
 =head2 source
 
-Type: yEd::Node
+Type: L<yEd::Node>
 
 Default: ... must be provided at constructor
 
@@ -89,7 +91,7 @@ The source Node reference.
 
 =head2 target
 
-Type: yEd::Node
+Type: L<yEd::Node>
 
 Default: ... must be provided at constructor
 
@@ -174,7 +176,7 @@ Type: bool
 Default: false
 
 If set to true the x and y coords of added waypoints are not considered to be absolute coords, but they will be relative to the previous waypoint.
-First waypoint will be relative to the source Node's coords.
+First waypoint will be relative to the C<source> Node's coords.
 Note that the coords of a Node indicate its upper left corner, not the center, while the default anchor point of Edges is the center of a Node and is described as being (0,0) in the Node's local coordinate system.
 However the first (relative) waypoint WILL be calculated from the source's center modified by the anchor point by this package, so you don't have to care for such inconsistency here. 
 
@@ -186,11 +188,16 @@ Creates a new instance of the corresponding Edge type.
 
 An ID must be provided as first parameter.
 This value may be any string or number but must be unique among the whole L<yEd::Document>.
-If you don't want to bother with IDs use the addNewEdge function of L<yEd::Document> instead, it will take care of the IDs.
+If you don't want to bother with IDs use the C<addNewEdge()> function of L<yEd::Document> instead, it will take care of the IDs.
 
-Second and third parameter must be references to yEd::Node type instances, which are the Edge's source and target Nodes (in this order).
+Second and third parameter must be references to L<yEd::Node> type instances, which are the Edge's C<source> and C<target> Nodes (in this order).
 
-Further parameters to set properties are optional (property => value, ...).
+Further parameters to set properties are optional (C<property1 =E<gt> value, property2 =E<gt> value2, ...>).
+
+=head3 EXAMPLE
+
+    # connects to the lower left corner of $srcNode (and center of $trgNode)
+    my $edge = yEd::Edge::GenericEdge->new('myid1', $srcNode, $trgNode, 'sx' => $srcNode->width() * -0.5 , 'sy' => $srcNode->height() * 0.5);
 
 =cut
 
@@ -202,13 +209,17 @@ sub new {
 
 Creates a copy of this Edge and returns it.
 
-Also copies all attached Labels and waypoints, so unless 'relativeWaypoints' was set you will most likely want to call clearWaypoints() on the copy.
+Also copies all attached Labels and waypoints, so unless C<relativeWaypoints> was set you will most likely want to call C<clearWaypoints()> on the copy.
 
 An ID must be given as first parameter as described in the Edge class constructor, it will be applied to the copy.
 
-Second and third parameter must be references to yEd::Node type instances, which are the copy's source and target Nodes (in this order).
+Second and third parameter must be references to L<yEd::Node> type instances, which are the copy's C<source> and C<target> Nodes (in this order).
 
-You may optionally specify properties in the form 'property => value, ...' to change these properties for the returned copy.
+You may optionally specify properties in the form C<property1 =E<gt> value, property2 =E<gt> value2, ...> to change these properties for the returned copy.
+
+=head3 EXAMPLE
+
+    my $edge2 = $edge->copy('id2', $newSrcNode, $newTrgNode,  'relativeWaypoints' => 0);
 
 =cut
 
@@ -292,7 +303,11 @@ sub _deregisterAll {
 
 =head2 getNodes
 
-Returns an array of all Nodes (as references) connected to this Edge (This will always be 1 or 2 elements).
+Returns an array of all Nodes connected to this Edge (This will always be 1 or 2 elements).
+
+=head3 EXAMPLE
+
+    foreach my $node ($edge->getNodes()) { ...
 
 =cut
 
@@ -326,11 +341,15 @@ sub relativeWaypoints {
 
 Takes 2 parameters, a x and y coordinate for the waypoint.
 The waypoint is added at the end of the list.
-Waypoint order is interpreted as: first to last = source to target.
+Waypoint order is interpreted as: first to last = C<source> to C<target>.
 
-Note that source and target is not provided as waypoints, neither do the properties sx,sy,tx,ty describe waypoints.
+Note that C<source> and C<target> are not provided as waypoints, neither do the anchor point properties C<sx>,C<sy>,C<tx>,C<ty> describe waypoints.
 Waypoints describe anchor mid-points for an Edge and are absolute by default.
-However you can have them interpreted as being relative by using the 'relativeWaypoints' property.
+However you can have them interpreted as being relative by using the C<relativeWaypoints> property.
+
+=head3 EXAMPLE
+
+    $edge->addWaypoint(0,50);
 
 =cut
 
@@ -344,9 +363,14 @@ sub addWaypoint {
 
 =head2 waypoints
 
-Acts as a getter with no parameters provided and returns an array of all Waypoints attached to this Edge.
+Acts as a getter with no parameters provided and returns an array of all waypoints attached to this Edge.
 
 If an array of coordinates is provided (where each coordinate is an array of 2 elements (x,y)), this Edge's waypoints are replaced by the given ones.
+
+=head3 EXAMPLE
+
+    $edge->waypoints($edge2->waypoints());
+    $edge->waypoints([0,50],[150,0]);
 
 =cut
 
@@ -368,6 +392,10 @@ sub waypoints {
 
 Removes all waypoints from this edge.
 
+=head3 EXAMPLE
+
+    $edge->clearWaypoints();
+
 =cut
 
 sub clearWaypoints {
@@ -379,9 +407,13 @@ sub clearWaypoints {
 
 =head2 addNewLabel
 
-Takes a value for the text property of Labels followed by optional Label properties ('property' => 'value', ...) and creates and adds a new Label from it.
+Takes a value for the C<text> property of Labels followed by optional Label properties (C<property1 =E<gt> value, property2 =E<gt> value2, ...>) and creates and adds a new Label from it.
 
 Returns a ref to the Label object.
+
+=head3 EXAMPLE
+
+    my $label = $edge->addNewLabel('hello world', 'alignment' => 'left');
 
 =cut
 
@@ -394,7 +426,11 @@ sub addNewLabel {
 
 =head2 addLabel
 
-Takes yEd::Label::EdgeLabel object and adds it.
+Takes a L<yEd::Label::EdgeLabel> object and adds it.
+
+=head3 EXAMPLE
+
+    $edge->addLabel($label);
 
 =cut
 
@@ -409,7 +445,17 @@ sub addLabel {
 
 Acts as a getter with no parameters provided and returns an array of all Labels attached to this Edge.
 
-If an array of yEd::Label::EdgeLabel objects is provided, this Edge's Labels are replaced by the given Labels.
+If an array of EdgeLabel objects is provided, this Edge's Labels are replaced by the given Labels.
+
+=head3 EXAMPLE
+
+    # this will make a copy of the array but not the Labels itself 
+    $edge->labels($edge2->labels());
+    # if you want a copy rather than shared refs use Label's copy() function:
+    $edge->clearLabels(); # if there may be any
+    foreach my $l ($edge2->labels()) {
+        $edge->addLabel($l->copy());
+    }
 
 =cut
 
@@ -430,6 +476,10 @@ sub labels {
 
 Removes all Labels from this Edge.
 
+=head3 EXAMPLE
+
+    $edge->clearLabels();
+
 =cut
 
 sub clearLabels {
@@ -439,9 +489,13 @@ sub clearLabels {
 
 =head2 getLabelsByProperties
 
-Takes arguments of the form 'property1 => value, property2 => value2, ...'.
+Takes arguments of the form C<property1 =E<gt> value, property2 =E<gt> value2, ...>. 
 
 Returns a list of all Labels that matches the given filter.
+
+=head3 EXAMPLE
+
+    my @bigfatlabels = $edge->getLabelsByProperties('fontSize' => 20, 'fontStyle' => 'bold');
 
 =cut
 

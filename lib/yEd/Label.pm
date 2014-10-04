@@ -26,6 +26,10 @@ L<yEd::Label::NodeLabel> Label for Nodes, see documentation for additional NodeL
 
 =back
 
+Have a look at the C<addNewLabel()> function of L<yEd::Node> and L<yEd::Edge>, it is the preferred way to create Labels.
+
+For saving Label templates see L<yEd::Document>'s C<addNewLabelTemplate()>, C<getTemplateLabel()> and the related functions.
+
 =head1 SUPPORTED FEATURES
 
 Labels are supported for both, Nodes and Edges.
@@ -35,7 +39,7 @@ However there are some features which are currently not supported:
 
 =item *
 
-Smart Labels: Because they offer few advantages over the other types and are much more complex to implement.
+Smart Label positioning: Because it offers few advantages over the other positioning modells and is much more complex to implement.
 
 =item *
 
@@ -47,9 +51,9 @@ SVG content (icons) for Labels
 
 =back
 
-All other types and features of Labels (yEd Version 3.13) are supported.
+All other features of Labels (yEd Version 3.13) are supported.
 
-For the available types (positioning modells) see the documentation of the specialized Labels.
+For the available positioning modells see the documentation of the specialized Labels.
 
 Other than in yEd itself you may add more than one Label to a single Node or Edge, regardless of its type.
 In fact some special Nodes in yEd have multiple Labels per default (e.g. tables), so yEd will handle this correctly.
@@ -64,15 +68,20 @@ Default: ... must be supplied
 
 The text to be displayed by the Label.
 
-If this is a blessed ref it will try to find a toString or to_string method with the fallback of standard perl stringification.
+If it is a blessed ref it will try to find a C<toString()> or C<to_string()> method with the fallback of standard perl stringification.
 
-If this is an array ref each entry will be treated as a line of text.
+If it is an array ref each entry will be treated as a line of text.
 
-If this is a hash ref its content will be formated like so:
+If it is a hash ref its content will be formated like so:
 
     key1:        value
     key2:        val2
     another key: val3
+
+Use a monospace font and left alignment (e.g. 'alignment' => 'left', 'fontFamily' => 'Monospaced') for hashes.
+Output will be sorted by keys, you can make your keys like _01_keyfirst , _02_keysecond, ... to order them (the ^_\d+_ portion will be removed for printing).
+
+Also see the C<getTextString()> function which returns this property as the printed text.
 
 =head2 visible
 
@@ -136,7 +145,7 @@ Type: uint
 
 Default: 0
 
-The inset between Label border and text.
+The bottom inset between Label border and text.
 
 =head2 topInset
 
@@ -144,7 +153,7 @@ Type: uint
 
 Default: 0
 
-The inset between Label border and text.
+The top inset between Label border and text.
 
 =head2 leftInset
 
@@ -152,7 +161,7 @@ Type: uint
 
 Default: 0
 
-The inset between Label border and text.
+The left inset between Label border and text.
 
 =head2 rightInset
 
@@ -160,7 +169,7 @@ Type: uint
 
 Default: 0
 
-The inset between Label border and text.
+The right inset between Label border and text.
 
 =head2 rotationAngle
 
@@ -186,7 +195,7 @@ Default: 'Dialog'
 
 The font for the Label text.
 
-As fonts differs on systems and platforms, this is not a descrete values property, be sure to choose a proper value (e.g. look into a yEd created graphml).
+As fonts differ on systems and platforms, this is not a descrete values property, be sure to choose a proper value (e.g. look into a yEd created graphml).
 The default font 'Dialog' seems to be always present.
 
 =head2 fontSize
@@ -223,6 +232,18 @@ Whether the text is underlined or not.
 
 =head1 SUBROUTINES/METHODS
 
+=head2 new
+
+Creates a new instance of a Label typ type.
+
+A value for the C<text> property must be provided as first parameter.
+
+Further parameters to set properties are optional (C<property1 =E<gt> value, property2 =E<gt> value2, ...>).
+
+=head3 EXAMPLE
+
+    my $label = yEd::Label::NodeLabel->new('hello world', 'underlinedText' => 1, 'textColor' => '#ff0000');
+
 =cut
 
 sub new {
@@ -233,7 +254,12 @@ sub new {
 
 Creates a copy of this Label and returns it.
 
-You may optionally specify properties in the form 'property => value, ...' to change these properties for the returned copy.
+You may optionally specify properties in the form C<property1 =E<gt> value, property2 =E<gt> value2, ...> to change these properties for the returned copy.
+
+=head3 EXAMPLE
+
+    my $newlabel = $label->copy();
+    my $newlabel2 = $label->copy('text' => 'my new text');
 
 =cut
 
@@ -276,9 +302,13 @@ sub text {
 
 =head2 getTextString
 
-While the 'text' property will return the set value (which may be a ref), this will return the text form of the property as it will be shown in yEd.
+While the C<text> property will return the set value (which may be a ref), this will return the text form of the property as it will be shown in yEd.
 
-Have a look at the 'text' property description for details.
+Have a look at the C<text> property description for details.
+
+=head3 EXAMPLE
+
+    print $label->getTextString();
 
 =cut
 
@@ -352,9 +382,14 @@ sub topInset {
 
 =head2 allInsets
 
-This is an alternative setter for the inset properties.
+This is an alternative setter for the C<inset...> properties.
 
 It takes one or two parameters, where the first one will set bottom and top (or all insets if there is no second parameter) and the second will set left and right.
+
+=head3 EXAMPLE
+
+    $label->allInsets(10);
+    $label->allInsets(4, 8);
 
 =cut
 

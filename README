@@ -18,7 +18,7 @@ perldoc command.
 
     perldoc yEd::Document
 
-And also use perldoc for all the other classes provided by the package and mentioned in perldoc yEd::Document.
+Also use perldoc for all the other classes provided by the package and mentioned in perldoc yEd::Document.
 
 You can also look for information at:
 

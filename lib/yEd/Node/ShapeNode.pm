@@ -40,7 +40,7 @@ The shape used for this node.
 
 Type: '#0000fa' (rgb) or '#000000cc' (rgb + transparency) java.awt.Color hex form or 'none'
 
-Default: '#B3A691'
+Default: '#b3a691'
 
 The color of the Node's shadow.
 

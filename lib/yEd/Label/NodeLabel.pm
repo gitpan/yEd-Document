@@ -14,7 +14,7 @@ Use this class to label your Nodes.
 
 Make sure to have a look at L<yEd::Label>, the properties and functions described there will not be repeated here.
 
-If you want to label a Edge class element use L<yEd::Label::EdgeLabel>. 
+If you want to label an Edge class element use L<yEd::Label::EdgeLabel>. 
 
 =head1 SUPPORTED FEATURES
 
@@ -36,7 +36,7 @@ Describes how to position the Label on the Node.
 
 =head3 free
 
-Free positioning (use x, y)
+Free positioning (use C<x>, C<y> properties)
 
 =head3 internal-X
 
@@ -214,7 +214,7 @@ Type: descrete values ( content | node_size | node_height | node_width )
 
 Default: 'content'
 
-The way to automatically determine the Labels height and/or witdh.
+The way to automatically determine the Labels C<height> and/or C<witdh>.
 
 =head2 cropping
 
@@ -233,16 +233,6 @@ L<yEd::Label>
 =cut
 
 my $modellmatch = '^(?:free|internal-(?:c|t|b|l|r|tl|tr|bl|br)|corners-(?:nw|ne|se|sw)|sandwich-(?:n|s)|sides-(?:n|s|w|e)|eight_pos-(?:n|s|e|w|nw|ne|sw|se)|edge_opposite)$';
-
-=head2 new
-
-Creates a new instance of NodeLabel.
-
-A value for the text property must be provided as first parameter.
-
-Further parameters to set properties are optional (property => value, ...).
-
-=cut
 
 sub new {
     my ($class, @args) = @_;

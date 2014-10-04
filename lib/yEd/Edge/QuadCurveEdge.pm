@@ -12,9 +12,9 @@ yEd::Edge::QuadCurveEdge - quadratic curve Edge
 
 Creates an Edge with quadratic curving.
 
-It can have multiple waypoints which may actually lie outside the Edge depending on 'straightness'.
+It can have multiple waypoints which may actually lie outside the Edge depending on C<straightness>.
 
-A 'straightness' set to 1 will look like a Polyline Edge without smoohting.
+A C<straightness> set to 1 will look like a PolyLineEdge without smoohting.
 
 Make sure to have a look at L<yEd::Edge>, the properties and functions described there will not be repeated here.
 

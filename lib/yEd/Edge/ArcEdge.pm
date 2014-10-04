@@ -11,9 +11,9 @@ yEd::Edge::ArcEdge - spans an arc from source to target
 
 =head1 DESCRIPTION
 
-This Edge spans an arc from source to target.
+This Edge spans an arc from C<source> to C<target>.
 
-It can have no waypoints, thus calls to addWaypoint or waypoints will result in error.
+It can have no waypoints, thus calls to C<addWaypoint()> or C<waypoints()>> will result in error.
 
 Make sure to have a look at L<yEd::Edge>, the properties and functions described there will not be repeated here.
 

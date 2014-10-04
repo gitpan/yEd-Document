@@ -36,7 +36,7 @@ Describes how to position the Label on the Edge.
 
 =head3 free
 
-Free positioning (use x, y)
+Free positioning (use C<x>, C<y> properties)
 
 =head3 two_pos-X
 
@@ -151,16 +151,6 @@ L<yEd::Label>
 =cut
 
 my $modellmatch = '^(?:free|two_pos-(?:head|tail)|centered|six_pos-(?:head|shead|thead|tail|stail|ttail)|three_center-(?:center|scentr|tcentr)|center_slider|side_slider)$';
-
-=head2 new
-
-Creates a new instance of EdgeLabel.
-
-A value for the text property must be provided as first parameter.
-
-Further parameters to set properties are optional (property => value, ...).
-
-=cut
 
 sub new {
     my ($class, @args) = @_;

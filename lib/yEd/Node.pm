@@ -13,7 +13,11 @@ yEd::Node - Base class for Nodes
 =head1 DESCRIPTION
 
 This is the base class for Nodes. 
-It may not be instanciated, instead use one of the specialized types as described in the SUPPORTED FEATURES section.
+It may not be instanciated, instead use one of the specialized types as described in the L</SUPPORTED FEATURES> section.
+
+Have a look at the C<addNewNode()> function of L<yEd::Document>, it is the preferred way to create Nodes.
+
+For saving Node templates see L<yEd::Document>'s C<addNewNodeTemplate()>, C<addTemplateNode()> and the related functions.
 
 =head1 SUPPORTED FEATURES
 
@@ -61,7 +65,7 @@ Support beyond yEd:
     
 =item *
     
-You may specify Nodes to be relative to other Nodes (see relative property)
+You may specify Nodes to be relative to other Nodes (see C<relative> property)
 
 =item *
 
@@ -79,6 +83,8 @@ Default: 0
 
 The drawing pane layer this Node is on.
 
+See L<yEd::Document> for details about using layers.
+
 =head2 relative
 
 Type: yEd::Node or 0 to erase relation
@@ -87,11 +93,13 @@ Default: 0
 
 If a Node reference is set here, this Nodes x and y properties will be interpreted as being relative to the given Node.
 
-Beware of creating loops !
+See L<yEd::Document> for details about relative objects.
 
 =head2 id
 
 This property is read only and returns the Nodes ID.
+
+See L<yEd::Document> for details about object identifiers.
 
 =head2 x
 
@@ -173,9 +181,13 @@ Creates a new instance of a Node.
 
 An ID must be provided as first parameter.
 This value may be any string or number but must be unique among the whole L<yEd::Document>.
-If you don't want to bother with IDs use the addNewNode function of L<yEd::Document> instead, it will take care of the IDs.
+If you don't want to bother with IDs use the C<addNewNode()> function of L<yEd::Document> instead, it will take care of the IDs.
 
-Further parameters to set properties are optional (property => value, ...).
+Further parameters to set properties are optional (C<property1 =E<gt> value, property2 =E<gt> value2, ...>).
+
+=head3 EXAMPLE
+
+    my $node = yEd::Node::GenericNode->new('myid1', 'x' => 500, 'y' => -33.7);
 
 =cut
 
@@ -191,9 +203,13 @@ Also copies all attached Labels.
 
 An ID must be given as first parameter as described in the Node classes constructors, it will be applied to the copy.
 
-You may optionally specify properties in the form 'property => value, ...' to change these properties for the returned copy.
+You may optionally specify properties in the form C<property1 =E<gt> value, property2 =E<gt> value2, ...> to change these properties for the returned copy.
 
-If this Node is relative to another one you will want to set a new relation partner for the copy or make it absolute.
+If this Node is relative to another one you may want to set a new relation partner for the copy, change its relative position or make it absolute.
+
+=head3 EXAMPLE
+
+    my $node2 = $node->copy('id2', 'x' => 89.5, 'y' => -33.7);
 
 =cut
 
@@ -238,6 +254,16 @@ sub _init {
 sub layer {
     return _PROPERTY($match{'uint'}, @_);
 }
+sub _checkloop {
+    my $self = shift;
+    my $node = $self;
+    my $count = 0;
+    do {
+        $node = $node->relative();
+        $count++;
+        confess "loop detected: relative node $self (id: " . $self->id() . ") found itself $count nodes later in hierarchy" if ($node == $self);
+    } while ($node);
+}
 sub relative {
     my ($self, $value) = @_;
     my $key = 'relative';
@@ -245,6 +271,7 @@ sub relative {
         confess "value must be a yEd::Node (or one of its subtypes) (given value: $value)" unless ($value == 0 or $value->isa('yEd::Node'));
         confess "Did you really think making a Node relative to itself would be a good idea?" if ($value and $value == $self);
         $self->{'properties'}{$key} = $value;
+        $self->_checkloop();
         return;
     } else {
         return $self->{'properties'}{$key};
@@ -273,25 +300,18 @@ sub _deregisterEdge {
 
 =head2 absX
 
-Returns the absolute x value for this Node which equals $node->x() unless $node->relative($node2) was set.
-In this case $node->absX() is $node2->absX() + $node->x().
+Returns the absolute x value for this Node which equals C<$node-E<gt>x()> unless C<$node-E<gt>relative($node2)> was set.
+In this case C<$node-E<gt>absX()> is C<$node2-E<gt>absX()> + C<$node-E<gt>x()>.
+
+=head3 EXAMPLE
+
+    # before you do $node->relative(0) you may want to make coords absolute:
+    $node->x($node->absX());
 
 =cut
 
-sub _checkloop {
-    my $self = shift;
-    my $node = $self;
-    my $count = 0;
-    do {
-        $node = $node->relative();
-        $count++;
-        confess "loop detected: relative node $self (id: " . $self->id() . ") found itself $count nodes later in hierarchy" if ($node == $self);
-    } while ($node);
-}
-
 sub absX {
     my $self = shift;
-    $self->_checkloop();
     my $x = $self->x();
     $x += $self->relative()->absX() if ($self->relative());
     return $x;
@@ -299,14 +319,18 @@ sub absX {
 
 =head2 absY
 
-Returns the absolute y value for this Node which equals $node->y() unless $node->relative($node2) was set.
-In this case $node->absY() is $node2->absY() + $node->y().
+Returns the absolute y value for this Node which equals C<$node-E<gt>y()> unless C<$node-E<gt>relative($node2)> was set.
+In this case C<$node-E<gt>absY()> is C<$node2-E<gt>absY()> + C<$node-E<gt>y()>.
+
+=head3 EXAMPLE
+
+    # before you do $node->relative(0) you may want to make coords absolute:
+    $node->y($node->absY());
 
 =cut
 
 sub absY {
     my $self = shift;
-    $self->_checkloop();
     my $y = $self->y();
     $y += $self->relative()->absY() if ($self->relative());
     return $y;
@@ -314,9 +338,12 @@ sub absY {
 
 =head2 absCenter
 
-Returns the absolute (x,y) values for this Node's center (as an array of 2 elements: x and y).
-Note that normal coords indicate the upper left corner of a Node or better its surrounding rectangle (circles, ...).
-So it is better to say: This returns the center of the surrounding rectangle.
+Returns the absolute (x,y) values for this Node's center (as an array of 2 elements).
+Note that normal coords indicate the upper left corner of a Node.
+
+=head3 EXAMPLE
+
+    my ($xc, $yc) = $node->absCenter();
 
 =cut
 
@@ -330,14 +357,18 @@ sub absCenter {
 
 =head2 getEdges
 
-Returns an array of all Edges (as references) connected to this Node.
+Returns an array of all Edges connected to this Node.
+
+=head3 EXAMPLE
+
+    foreach my $edge ($node->getEdges()) { ...
 
 =cut
 
 sub getEdges {
     my $self = shift;
     my @edges;
-    foreach my $edge (keys $self->{'edges'}) {
+    foreach my $edge (keys %{$self->{'edges'}}) {
         push @edges, $self->{'edges'}{$edge}{'ref'};
     }
     return @edges;
@@ -347,9 +378,13 @@ sub getEdges {
 
 =head2 addNewLabel
 
-Takes a value for the text property of Labels followed by optional Label properties ('property' => 'value', ...) and creates and adds a new Label from it.
+Takes a value for the C<text> property of Labels followed by optional Label properties (C<property1 =E<gt> value, property2 =E<gt> value2, ...>) and creates and adds a new Label from it.
 
 Returns a ref to the Label object.
+
+=head3 EXAMPLE
+
+    my $label = $node->addNewLabel('hello world', 'alignment' => 'left');
 
 =cut
 
@@ -362,7 +397,11 @@ sub addNewLabel {
 
 =head2 addLabel
 
-Takes yEd::Label::NodeLabel object and adds it.
+Takes a L<yEd::Label::NodeLabel> object and adds it.
+
+=head3 EXAMPLE
+
+    $node->addLabel($label);
 
 =cut
 
@@ -377,7 +416,17 @@ sub addLabel {
 
 Acts as a getter with no parameters provided and returns an array of all Labels attached to this Node.
 
-If an array of yEd::Label::NodeLabel objects is provided, this nodes Labels are replaced by the given Labels.
+If an array of NodeLabel objects is provided, this Node's Labels are replaced by the given Labels.
+
+=head3 EXAMPLE
+
+    # this will make a copy of the array but not the Labels itself 
+    $node->labels($node2->labels());
+    # if you want a copy rather than shared refs use Label's copy() function:
+    $node->clearLabels(); # if there may be any
+    foreach my $l ($node2->labels()) {
+        $node->addLabel($l->copy());
+    }
 
 =cut
 
@@ -398,6 +447,10 @@ sub labels {
 
 Removes all Labels from this Node.
 
+=head3 EXAMPLE
+
+    $node->clearLabels();
+
 =cut
 
 sub clearLabels {
@@ -407,9 +460,13 @@ sub clearLabels {
 
 =head2 getLabelsByProperties
 
-Takes arguments of the form 'property1 => value, property2 => value2, ...'.
+Takes arguments of the form C<property1 =E<gt> value, property2 =E<gt> value2, ...>.
 
 Returns a list of all Labels that matches the given filter.
+
+=head3 EXAMPLE
+
+    my @bigfatlabels = $node->getLabelsByProperties('fontSize' => 20, 'fontStyle' => 'bold');
 
 =cut
 

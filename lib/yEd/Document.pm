@@ -1,6 +1,6 @@
 package yEd::Document;
 
-use 5.006;
+use 5.010;
 use strict;
 use warnings FATAL => 'all';
 use XML::LibXML;
@@ -22,11 +22,11 @@ yEd::Document - pure perl API to easily create yEd-loadable Documents from scrat
 
 =head1 VERSION
 
-Version 1.00
+Version 1.01
 
 =cut
 
-our $VERSION = '1.00';
+our $VERSION = '1.01';
 
 =head1 DEPENDENCIES
 
@@ -40,7 +40,7 @@ L<XML::LibXML>
 
 =head1 INTENTION
 
-This package is intended to offer a way to create yEd Documents from scratch using perl.
+This package is intended to offer a way to create yEd Documents from scratch without having to deal with XML at all.
 
 It is ment to help automating the task of creating graphical overviews of platforms, workflows, dependencies, ...
 
@@ -50,7 +50,7 @@ Since it doesn't support all the features of a yEd created Document you can only
 
 This package and all available features have been developed and tested for yEd version 3.13.
 
-If you find it doesn't work on another version or a specific platform, please let me know.
+If you find it doesn't work on another version or a specific platform, please let me know (see sections L</BUGS> and/or L</SUPPORT>)).
 
 Object features are supported as described at 
 
@@ -72,16 +72,15 @@ L<yEd::Label>
 
 and its subclasses.
 
-The Document itself supports basic templating, layers and id management.
+The Document itself supports basic templating (section L</TEMPLATING>), layers (section L</LAYERS>) and id management (section L</OBJECT IDENTIFIERS>).
 
-You can also use relative coords for positioning your entities and use this feature for basic grouping.
+You can also use relative coords for positioning your entities and use this feature for basic grouping (section L</RELATIVE OBJECTS>).
 
-All entities are property based and can also be selected by properties.
+All entities are property based and can also be selected by properties (see L<yEd::PropertyBasedObject>).
 
 =head1 SYNOPSIS
 
-This package provides a pure object oriented implementation,
-so only use functions and properties of yEd::Document and the other types in the context of a blessed instance.
+This package provides a pure object oriented implementation, so only use functions and properties of yEd::Document and the other types in the context of a blessed instance.
 
 Minimal example (creating an empty, yEd loadable Document):
 
@@ -92,6 +91,36 @@ Minimal example (creating an empty, yEd loadable Document):
     $xmlstring = $d->buildDocument();
     # or
     $d->buildDocument('/mypath/mydocument');
+
+Example of different ways to create a Node with Label (all have the same effect on the Document):
+
+    # the manual approach
+    my $n = yEd::Node::ShapeNode->new('myid1');
+    $n->x(50);
+    $n->y(150);
+    my $l = yEd::Label::NodeLabel->new('hello world');
+    $n->addLabel($l);
+    $doc->addNode($n);
+
+    # a slightly more user friendly approach
+    # provide the propertys with constructor and don't deal with IDs
+    my $n = yEd::Node::ShapeNode->new($doc->getFreeId(), 'x' => 50, 'y' => 150);
+    # directly add the label
+    my $l = $n->addNewLabel('hello world');
+    $doc->addNode($n);
+
+    # or do it all in two lines
+    my $n = $doc->addNewNode('ShapeNode', 'x' => 50, 'y' => 150);
+    my $l = $n->addNewLabel('hello world');
+
+    # or in one if you don't need the node ref (label ref is returned)
+    my $l = $doc->addNewNode('ShapeNode', 'x' => 50, 'y' => 150)->addNewLabel('hello world');
+
+    # or use templating if you need many copies of the same node
+    my $l = $doc->addNewNodeTemplate('mytemplate', 'ShapeNode', 'x' => 50, 'y' => 150)->addNewLabel('hello world');
+    my $n = $doc->addTemplateNode('mytemplate');
+    # you can use $n to modify the copy (e.g. coords), you can also provide new properties with the call to addTemplateNode()
+    # creating edges can be done in nearly the same ways
 
 Example of using relative entities and layers (ready to run):
 
@@ -160,11 +189,11 @@ Example of using templating (ready to run):
 
 All Nodes and Edges of a Document must have an unique ID.
 
-If you only use the yEd::Document's addNew... functions and templating features you won't have to care for IDs.
+If you only use the yEd::Document's C<addNew...()> functions and templating features you won't have to care for IDs.
 
 But if you need to externally create Nodes or Edges from its classes you will have to provide the ID yourself.
 
-In this case it is up to you to ensure unique values unless you obtain the IDs via yEd::Document's getFreeId function.
+In this case it is up to you to ensure unique values unless you obtain the IDs via yEd::Document's C<getFreeId()> function.
 
 This automatically created IDs will always be positive integer values, but if you provide your own IDs you can use almost anything.
 
@@ -172,70 +201,80 @@ If you load and save a Document in yEd all IDs will be converted to yEd's syntax
 
 =head1 TEMPLATING
 
-If you have to add many copies of the same modification of a Node, Edge or Label have a look at yEd::Document's template functions.
+If you have to add many copies of the same modification of a Node, Edge or Label have a look at yEd::Document's template functions (each with a 'Template' in its name).
 
 These offer the ability to save an object's configuration and return and/or add copies of it.
 
 For Nodes and Edges added Labels will be copied along with the template.
 
-For Nodes that are relative to other Nodes you may want to call 'relative(0)' or 'relative($newTarget)' on the copy (or provide it with the properties parameter).
+For Nodes that are relative to other Nodes you may want to call C<relative(0)> or C<relative($newTarget)> on the copy (or provide it with the properties parameter).
 
-For Edges all waypoints are copied along with the template, this may not be what you want unless the Edge's 'relativeWaypoints' property is set, consider calling 'clearWaypoints()' on the copy.
+For Edges all waypoints are copied along with the template, this may not be what you want unless the Edge's C<relativeWaypoints> property is set, consider calling C<clearWaypoints()> on the copy.
+
+Have a look at the 'Example of using templating' in the section L</SYNOPSIS>.
 
 =head1 RELATIVE OBJECTS
 
 A Node or Edge-waypoint by default will be absolute, this is its x and y values are directly applied to the drawing pane.
 
-However you can change a Node to be relative to a given other Node by using the Node's 'relative' property.
+However you can change a Node to be relative to a given other Node by using the Node's C<relative> property.
 In this case x and y are values that are added to the other Node's absolute position to determine the Node's position.
 The other Node however may be relative to yet another Node, too.
 Just make sure you don't create dependency loops. ;)
 
-If you manually cut the relation of two Nodes by setting 'relative(0)' on the dependend Node, the provided x and y value will not be changed but only interpreted as being absolute further on.
-If you want to cut the relation without changing the Node's current absolute position call '$n->x($n->absX)' and '$n->y($n->absY)' BEFORE the call to 'relative(0)'.
+If you manually cut the relation of two Nodes by setting C<relative(0)> on the dependend Node, the provided C<x> and C<y> value will not be changed but only interpreted as being absolute further on.
+If you want to cut the relation without changing the Node's current absolute position call C<$n-E<gt>x($n-E<gt>absX())> and C<$n-E<gt>y($n-E<gt>absY())> BEFORE the call to C<$n-E<gt>relative(0)>.
 
-Note that the x and y coords of a Node refer to its upper left corner or rather the upper left corner of the Node's surrounding rectangle (e.g. for ellipse ShapeNodes).
+Note that the C<x> and C<y> coords of a Node refer to its upper left corner or rather the upper left corner of the Node's surrounding rectangle (e.g. for ellipse ShapeNodes).
 Consider this if you do any Node positioning math in your scripts.
 
-Edges do have such a property, too, it is called 'relativeWaypoints' but is a boolean value in contrast to Node's property.
+Edges do have such a property, too, it is called C<relativeWaypoints> but is a boolean value in contrast to Node's property.
 If set to a true value any waypoints added to this Edge will be positioned relative to the previous waypoint.
-The first waypoint's position will be calculated relative to the Edge's anchor point on its source Node (sx,sy). 
+The first waypoint's position will be calculated relative to the Edge's anchor point on its C<source> Node (C<sx>,C<sy>). 
 
-If you change from 'relativeWaypoints(1)' to 'relativeWaypoints(0)' there will be no conversion of the waypoint coords by default (same behavior as for Nodes).
+If you change from C<relativeWaypoints(1)> to C<relativeWaypoints(0)> there will be no conversion of the waypoint coords by default (same behavior as for Nodes).
 
-Note that the source Node anchor point (sx,sy) is relative to the Node's center (sx = sy = 0).
-This is somehow inconsistent as the Node's coords don't describe its center.
+Note that the source Node anchor point (C<sx>,C<sy>) is relative to the Node's center (C<sx> = C<sy> = 0) (as is true for the C<target> anchor).
+This is somehow inconsistent as the Node's coords don't describe its center (you can obtain a Node's center by using its C<absCenter()> function).
 Consider this if you do any positioning math in your scripts.
 However for relative waypoints you will likely have the desired bahavior by default, since first waypoint is relative to the anchor point which's absolute position is automatically computed for you by this package.
 
-Hint: If you create "groups" with the reative feature always build your group on top of a root node that spans the whole area of the group.
+Have a look at the 'Example of using relative entities and layers' in the section L</SYNOPSIS>.
+
+Tip: If you create "groups" with the reative feature always build your group on top of a root node that spans the whole area of the group.
 If you need the Nodes to not be surrounded by a background root Node simply make it invisible (no fill color, no border).
-This way you can always ask your root Node for the width and height of the whole "group" if you need these values for calculation. :)
+This way you can always ask your root Node for the C<width> and C<height> of the whole "group" if you need these values for calculation. :)
 
 Note that this way of "grouping" has no effect in yEd, it does only exist within the code.
 
 =cut 
 
-#TODO: VirtualGroupNode Type ? invisible rectangle ShapeNode that allows adding relative Nodes and autosizes itself on Node addition/removal ...
+#TODO: VirtualGroupNode Type ? invisible rectangle ShapeNode that allows adding relative Nodes and autosizes itself on Node addition/removal .. ?.
 
 =head1 LAYERS
 
 yEd Documents / Nodes do only support "virtual" layering which is saved to the graphml file by giving the Nodes a special order (first Node defined is drawn first).
 
 This concept has been adopted by this package.
-The layer is described as a property of each Node, named 'layer' (Edges do not support layering, they will always be drawn on top the Nodes).
+The layer is described as a property of each Node, named C<layer> (Edges do not support layering, they will always be drawn on top the Nodes).
 Its default value is 0 which is the bottom layer.
 You can define the layer of a Node as any positive integer value, where a higher value is "more in front".
 
 Within a single layer the drawing order of Nodes is undefined, if they overlap or need a special order because of other reasons use different layers.
 
-Like with any other property you may obtain a list of all Nodes on a specified layer by using 'getNodesByProperties' (e.g. getNodesByProperties(layer => 3)).
+Like with any other property you may obtain a list of all Nodes on a specified layer by using C<getNodesByProperties()> (e.g. C<getNodesByProperties('layer' =E<gt> 3>).
+
+Have a look at the 'Example of using relative entities and layers' in the section L</SYNOPSIS>.
 
 =head1 SUBROUTINES/METHODS
 
 =head2 new
 
 Creates a new instance of yEd::Document and initializes it.
+
+=head3 EXAMPLE
+
+    my $doc = yEd::Document->new();
 
 =cut
 
@@ -274,6 +313,10 @@ Resets (empties) and reinitializes this Document.
 
 Previously registered templates will be kept.
 
+=head3 EXAMPLE
+
+    $doc->resetDocument();
+
 =cut
 
 sub resetDocument {
@@ -302,6 +345,11 @@ sub resetDocument {
 Builds the Document and returns it as a string.
 
 If a filename is provided (without the ending) it will additionally be written into filename.graphml . 
+
+=head3 EXAMPLE
+
+    my $xml = $doc->buildDocument();
+    my $xml = $doc->buildDocument('/path/to/mydoc');
 
 =cut
 
@@ -342,9 +390,13 @@ sub buildDocument {
 
 =head2 getFreeId
 
-Returns the next still free ID number, that can be used for creating new Nodes or Edges.
+Returns the next still free C<id>, that can be used for creating new Nodes or Edges.
 
 This is only required if you externally create new Nodes/Edges and you could also use own values as IDs (you will then have to ensure that all IDs are unique).
+
+=head3 EXAMPLE
+
+    my $myid = $doc->getFreeId();
 
 =cut
 
@@ -360,7 +412,11 @@ sub getFreeId {
 
 =head2 getFrontLayer
 
-Returns the highest layer number that is set for any Node of this Document.
+Returns the highest C<layer> that is set for any Node of this Document.
+
+=head3 EXAMPLE
+
+    my $front = $doc->getFrontLayer();
 
 =cut
 
@@ -379,12 +435,16 @@ sub getFrontLayer {
 
 Creates a template for Labels.
 
-Must have parameters are: templatename (a string for accessing the template) , labeltype (Node- or EdgeLabel) , labeltext (the text for the Label)
+Must have parameters are: templatename (a string for accessing the template) , labeltype (Node- or EdgeLabel) , labeltext (the C<text> for the Label)
 
-Further parameters to set properties are optional (property => value, ...).
+Further parameters to set properties are optional (C<property1 =E<gt> value, property2 =E<gt> value2, ...>).
 
 The template Label is returned as a reference, if you modify this reference all further copies of the template will be affected !
 Copies created earlier will not be affected since they are as said copies.
+
+=head3 EXAMPLE
+
+    my $tmplLabel = $doc->addNewLabelTemplate('mytemplate', 'NodeLabel', 'hello world', 'alignment' => 'left');
 
 =cut
 
@@ -402,10 +462,14 @@ Creates a template for Labels.
 
 Must have parameters are: templatename (a string for accessing the template) , label (a reference to a Label object)
 
-Further parameters to set properties are optional (property => value, ...).
+Further parameters to set properties are optional (C<property1 =E<gt> value, property2 =E<gt> value2, ...>).
 
 The source Label will not be changed, a copy of the Label will be used as template.
 If you want to modify the template after adding it use the returned reference to the copy.
+
+=head3 EXAMPLE
+
+    my $tmplLabel = $doc->addLabelTemplate('mytemplate', $srcLabel, 'text' => 'foo');
 
 =cut
 
@@ -422,10 +486,14 @@ Creates a copy of a previously created Label template and returns it.
 
 Must have parameters are: templatename (a string for accessing the template)
 
-Further parameters to set properties are optional (property => value, ...).
+Further parameters to set properties are optional (C<property1 =E<gt> value, property2 =E<gt> value2, ...>).
 
 In contrast to Nodes and Edges Label templates can not be added directly because the need to be added to a Node or Edge.
-So use this function to obtain a copy and do with it what ever you want.
+So use this function to obtain a copy and add it somewhere yourself.
+
+=head3 EXAMPLE
+
+    my $label = $doc->getTemplateLabel('mytemplate', 'text' => 'bar');
 
 =cut
 
@@ -442,10 +510,14 @@ Creates a template for Nodes.
 
 Must have parameters are: templatename (a string for accessing the template) , nodetype (Shape- or GenericNode)
 
-Further parameters to set properties are optional (property => value, ...).
+Further parameters to set properties are optional (C<property1 =E<gt> value, property2 =E<gt> value2, ...>).
 
 The template Node is returned as a reference, if you modify this reference all further copies of the template will be affected !
 Copies created earlier will not be affected since they are as said copies.
+
+=head3 EXAMPLE
+
+    my $tmplNode = $doc->addNewNodeTemplate('mytemplate', 'ShapeNode', 'width' => 300, 'height' => 200);
 
 =cut
 
@@ -463,10 +535,14 @@ Creates a template for Nodes.
 
 Must have parameters are: templatename (a string for accessing the template) , node (a reference to a Node object)
 
-Further parameters to set properties are optional (property => value, ...).
+Further parameters to set properties are optional (C<property1 =E<gt> value, property2 =E<gt> value2, ...>).
 
 The source Node will not be changed, a copy of the Node will be used as template.
 If you want to modify the template after adding it use the returned reference to the copy.
+
+=head3 EXAMPLE
+
+    my $tmplNode = $doc->addNodeTemplate('mytemplate', $srcNode, 'width' => 300, 'height' => 200);
 
 =cut
 
@@ -483,7 +559,11 @@ Creates a copy of a previously created Node template and returns it.
     
 Must have parameters are: templatename (a string for accessing the template)
     
-Further parameters to set properties are optional (property => value, ...).
+Further parameters to set properties are optional (C<property1 =E<gt> value, property2 =E<gt> value2, ...>).
+
+=head3 EXAMPLE
+
+    my $node = $doc->getTemplateNode('mytemplate', 'x' => 50, 'y' => 200);
 
 =cut
 
@@ -500,7 +580,11 @@ Creates a copy of a previously created Node template, adds it to the Document an
     
 Must have parameters are: templatename (a string for accessing the template)
     
-Further parameters to set properties are optional (property => value, ...).
+Further parameters to set properties are optional (C<property1 =E<gt> value, property2 =E<gt> value2, ...>).
+
+=head3 EXAMPLE
+
+    my $node = $doc->addTemplateNode('mytemplate', 'x' => 50, 'y' => 200);
 
 =cut
 
@@ -517,10 +601,14 @@ Creates a template for Edges.
 
 Must have parameters are: templatename (a string for accessing the template) , edgetype (one of the supported Edge class names)
 
-Further parameters to set properties are optional (property => value, ...).
+Further parameters to set properties are optional (C<property1 =E<gt> value, property2 =E<gt> value2, ...>).
 
 The template Edge is returned as a reference, if you modify this reference all further copies of the template will be affected !
 Copies created earlier will not be affected since they are as said copies.
+
+=head3 EXAMPLE
+
+    my $tmplEdge = $doc->addNewEdgeTemplate('mytemplate', 'ArcEdge', 'tArrow' => 'standard');
 
 =cut
 
@@ -538,10 +626,14 @@ Creates a template for Edges.
     
 Must have parameters are: templatename (a string for accessing the template) , edge (a reference to an Edge object)
     
-Further parameters to set properties are optional (property => value, ...).
+Further parameters to set properties are optional (C<property1 =E<gt> value, property2 =E<gt> value2, ...>).
 
 The source Edge will not be changed, a copy of the Edge will be used as template.
 If you want to modify the template after adding it use the returned reference to the copy.
+
+=head3 EXAMPLE
+
+    my $tmplEdge = $doc->addEdgeTemplate('mytemplate', $srcEdge, 'tArrow' => 'standard');
 
 =cut
 
@@ -556,9 +648,13 @@ sub addEdgeTemplate {
 
 Creates a copy of a previously created Edge template and returns it.
     
-Must have parameters are: templatename (a string for accessing the template), source, target (the new source and target yEd::Node refs for the new Edge)
+Must have parameters are: templatename (a string for accessing the template), source, target (the new C<source> and C<target> L<yEd::Node> refs for the new Edge)
     
-Further parameters to set properties are optional (property => value, ...).
+Further parameters to set properties are optional (C<property1 =E<gt> value, property2 =E<gt> value2, ...>).
+
+=head3 EXAMPLE
+
+    my $edge = $doc->getTemplateEdge('mytemplate', $srcNode, $trgNode, 'tArrow' => 'standard');
 
 =cut
 
@@ -573,9 +669,13 @@ sub getTemplateEdge {
 
 Creates a copy of a previously created Edge template, adds it to the Document and returns it.
     
-Must have parameters are: templatename (a string for accessing the template), source, target (the new source and target yEd::Node refs for the new Edge)
+Must have parameters are: templatename (a string for accessing the template), source, target (the new C<source> and C<target> L<yEd::Node> refs for the new Edge)
     
-Further parameters to set properties are optional (property => value, ...).
+Further parameters to set properties are optional (C<property1 =E<gt> value, property2 =E<gt> value2, ...>).
+
+=head3 EXAMPLE
+
+    my $edge = $doc->addTemplateEdge('mytemplate', $srcNode, $trgNode, 'tArrow' => 'standard');
 
 =cut
 
@@ -594,7 +694,11 @@ Creates a new Node, adds it and returns a reference to it.
 
 Must have parameters are: nodetype (Shape- or GenericNode)
 
-Further parameters to set properties are optional (property => value, ...).
+Further parameters to set properties are optional (C<property1 =E<gt> value, property2 =E<gt> value2, ...>).
+
+=head3 EXAMPLE
+
+    my $node = $doc->addNewNode('ShapeNode', 'x' => 60, 'y' => 450);
 
 =cut
 
@@ -608,7 +712,11 @@ sub addNewNode {
 
 =head2 addNode
 
-Takes a yEd::Node as parameter and adds it to the Document.
+Takes a L<yEd::Node> as parameter and adds it to the Document.
+
+=head3 EXAMPLE
+
+    $doc->addNode($node);
 
 =cut
 
@@ -624,17 +732,25 @@ sub addNode {
 
 Returns an array of all Nodes of this Document.
 
+=head3 EXAMPLE
+
+    my @nodes = $doc->getNodes();
+
 =cut
 
 sub getNodes {
-    return values $_[0]->{'nodes'};
+    return values %{$_[0]->{'nodes'}};
 }
 
 =head2 getNodesByProperties
 
-Takes arguments of the form 'property1 => value, property2 => value2, ...'.
+Takes arguments of the form C<property1 =E<gt> value, property2 =E<gt> value2, ...>.
 
 Returns a list of all Nodes that matches the given filter.
+
+=head3 EXAMPLE
+
+    my @nodes = $doc->getNodesByProperties('width' => 300);
 
 =cut
 
@@ -649,7 +765,11 @@ sub getNodesByProperties {
 
 =head2 hasNodeId
 
-Takes a Node's id as parameter and returns true if it is present in this Document.
+Takes a Node's C<id> as parameter and returns true if it is present in this Document.
+
+=head3 EXAMPLE
+
+    if ($doc->hasNodeId('myid1')) { ...
 
 =cut
 
@@ -661,7 +781,11 @@ sub hasNodeId {
 
 =head2 getNodeById
 
-Takes an id as parameter and returns the Node with this id, if present in this Document.
+Takes an C<id> as parameter and returns the Node with this C<id>, if present in this Document.
+
+=head3 EXAMPLE
+
+    my $node = $doc->getNodeById('myid1');
 
 =cut
 
@@ -673,15 +797,21 @@ sub getNodeById {
 
 =head2 removeNode
 
-Takes a yEd::Node as parameter and tries to remove it from this document.
+Takes a L<yEd::Node> as parameter and tries to remove it from this document.
 
 All connected Edges will be removed, too.
 
-If there are Nodes relative to the given Node, they will also be removed (and their Edges and Nodes relative to these Nodes and so on, until all dependencies are resolved) unless the second (keepRelative) parameter is true.
-In this case the absolute x and y values are calculated and the relationship is cut, making the orphaned Nodes absolute. 
+If there are Nodes C<relative> to the given Node, they will also be removed (and their Edges and Nodes relative to these Nodes and so on, until all dependencies are resolved) unless the second (keepRelative) parameter is true.
+In this case the absolute C<x> and C<y> values are calculated and the relationship is cut, making the orphaned Nodes absolute. 
 
-Example: if you call removeNode($grouproot) in the "example of using relative entities and layers" (see SYNOPSIS), only the circle will remain.
-If you call removeNode($grouproot, 1) instead, only $grouproot and $e will be removed, making $n absolute at its last position.
+=head3 EXAMPLE
+
+    # in the "Example of using relative entities and layers" (see SYNOPSIS)
+    # only the cirlce will remain if you call
+    $d->removeNode($grouproot);
+    # only $grouproot and $e will be removed if you call
+    $d->removeNode($grouproot, 1);
+    # $n will then be absolute at its last position
 
 =cut
 
@@ -712,9 +842,13 @@ sub removeNode {
 
 Creates a new Edge, adds it and returns a reference to it.
 
-Must have parameters are: edgetype (one of the supported Edge class names), source, target (the source and target yEd::Node refs for the new Edge)
+Must have parameters are: edgetype (one of the supported Edge class names), source, target (the C<source> and C<target> L<yEd::Node> refs for the new Edge)
 
-Further parameters to set properties are optional (property => value, ...).
+Further parameters to set properties are optional (C<property1 =E<gt> value, property2 =E<gt> value2, ...>).
+
+=head3 EXAMPLE
+
+    my $edge = $doc->addNewEdge('ArcEdge', $srcNode, $trgNode, 'tArrow' => 'standard');
 
 =cut
 
@@ -728,7 +862,11 @@ sub addNewEdge {
 
 =head2 addEdge
 
-Takes a yEd::Edge as parameter and adds it to the Document.
+Takes a L<yEd::Edge> as parameter and adds it to the Document.
+
+=head3 EXAMPLE
+
+    $doc->addEdge($edge);
 
 =cut
 
@@ -744,17 +882,25 @@ sub addEdge {
 
 Returns an array of all Edges of this Document.
 
+=head3 EXAMPLE
+
+    my @edges = $doc->getEdges();
+
 =cut
 
 sub getEdges {
-    return values $_[0]->{'edges'};
+    return values %{$_[0]->{'edges'}};
 }
 
 =head2 getEdgesByProperties
 
-Takes arguments of the form 'property1 => value, property2 => value2, ...'.
+Takes arguments of the form C<property1 =E<gt> value, property2 =E<gt> value2, ...>.
 
 Returns a list of all Edges that matches the given filter.
+
+=head3 EXAMPLE
+
+    my @edges = $doc->getEdgesByProperties('tArrow' => 'standard');
 
 =cut
 
@@ -769,7 +915,11 @@ sub getEdgesByProperties {
 
 =head2 hasEdgeId
 
-Takes an Edge's id as parameter and returns true if it is present in this Document.
+Takes an Edge's C<id> as parameter and returns true if it is present in this Document.
+
+=head3 EXAMPLE
+
+    if ($doc->hasEdgeId('myid1')) { ...
 
 =cut
 
@@ -781,7 +931,11 @@ sub hasEdgeId {
 
 =head2 getEdgeById
 
-Takes an id as parameter and returns the Edge with this id, if present in this Document.
+Takes an C<id> as parameter and returns the Edge with this C<id>, if present in this Document.
+
+=head3 EXAMPLE
+
+    my $edge = $doc->getEdgeById('myid1');
 
 =cut
 
@@ -793,7 +947,11 @@ sub getEdgeById {
 
 =head2 removeEdge
 
-Takes a yEd::Edge as parameter and tries to remove it from this document.
+Takes a L<yEd::Edge> as parameter and tries to remove it from this document.
+
+=head3 EXAMPLE
+
+    $doc->removeEdge($edge);
 
 =cut
 
@@ -816,7 +974,6 @@ Heiko Finzel, C<< <heikofinzel at googlemail.com> >>
 Please report any bugs or feature requests to C<bug-yed-document at rt.cpan.org>, or through
 the web interface at L<http://rt.cpan.org/NoAuth/ReportBug.html?Queue=yEd-Document>.  I will be notified, and then you'll
 automatically be notified of progress on your bug as I make changes.
-
 
 =head1 SUPPORT
 

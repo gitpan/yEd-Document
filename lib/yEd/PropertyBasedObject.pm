@@ -6,7 +6,7 @@ use base qw(Exporter);
 
 =head1 NAME
 
-yEd::PropertyBasedObject - common methods for property based yEd Objects (e.g. Nodes,Edges,Labels)
+yEd::PropertyBasedObject - common methods for property based yEd Objects (Nodes,Edges,Labels)
 
 =head1 DESCRIPTION
 
@@ -37,7 +37,7 @@ L<yEd::Label>
 
 and its subclasses.
 
-=head2 EXAMPLE
+=head3 EXAMPLE
 
     $node->x(3.5);
     $node->fillColor('#cccccc');
@@ -70,13 +70,13 @@ our @ignoreProperties = ( 'id' );
 
 =head2 setProperties
 
-Takes arguments of the form 'property1 => value, property2 => value2, ...' and sets the provided properties accordingly for the element in whichs context this funktion is called.
+Takes arguments of the form C<property1 =E<gt> value, property2 =E<gt> value2, ...> and sets the provided properties accordingly for the element in which's context this funktion is called.
 
 Properties not provided will be left unchanged. 
 
 =head3 EXAMPLE
 
-    $node->setProperties('fillColor' => '#ffffff', 'borderColor' => 'none'));
+    $node->setProperties('fillColor' => '#ffffff', 'borderColor' => 'none');
 
 =cut
 
@@ -96,7 +96,7 @@ sub setProperties {
 
 =head2 getProperties
 
-Returns a hash of the properties and their current values for the element in whichs context this funktion is called.
+Returns a hash of the properties and their current values for the element in which's context this funktion is called.
 
 =head3 EXAMPLE
 
@@ -110,9 +110,9 @@ sub getProperties {
 
 =head2 hasProperties
 
-Takes arguments of the form 'property1 => value, property2 => value2, ...'.
+Takes arguments of the form C<property1 =E<gt> value, property2 =E<gt> value2, ...>.
 
-Returns true if the element in whichs context this funktion is called has all provided properties set to the provided values.
+Returns true if the element in which's context this funktion is called has all provided properties set to the provided values.
 
 Returns false otherwise or if an invalid property is provided.
 
